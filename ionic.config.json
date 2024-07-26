@@ -1,0 +1,7 @@
+{
+  "name": "stck_app_reader",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
