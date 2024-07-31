@@ -5,29 +5,25 @@
         <ion-buttons slot="start">
           <ion-back-button :text="getBackButtonText()" default-href="/"></ion-back-button>
         </ion-buttons>
+        <ion-title>Story</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content :fullscreen="true" v-if="message">
-      <ion-item>
-        <ion-icon aria-hidden="true" :icon="personCircle" color="primary"></ion-icon>
-        <ion-label class="ion-text-wrap">
-          <h2>
-            {{ message.fromName }}
-            <span class="date">
-              <ion-note>{{ message.date }}</ion-note>
-            </span>
-          </h2>
-          <h3>To: <ion-note>Me</ion-note></h3>
-        </ion-label>
-      </ion-item>
+    <ion-content :fullscreen="true" v-if="article">
+      <ion-img alt="Silhouette of mountains" :src="article.meta.cover.src.fallback" />
+      <ion-card-header>
+        <ion-card-title>{{ article.title }}</ion-card-title>
+      </ion-card-header>
 
-      <div class="ion-padding">
-        <h1>{{ message.subject }}</h1>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </p>
-      </div>
+      <ion-card-content class="custom-card-content">
+        <div class="clamp-text">
+          {{ article.summary }}
+        </div>
+      </ion-card-content>
+
+    <ion-list :inset="true">
+      <chapter-list-item v-for="chapter in article.meta.children" :key="chapter.id" :chapter="chapter" />
+    </ion-list>
     </ion-content>
   </ion-page>
 </template>
@@ -39,24 +35,52 @@ import {
   IonButtons,
   IonContent,
   IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonNote,
   IonPage,
   IonToolbar,
+  IonTitle,
+  IonCardTitle,
+  IonCardHeader,
+  IonList,
+  IonCardContent,
+  IonImg
 } from '@ionic/vue';
-import { personCircle } from 'ionicons/icons';
-import { getMessage } from '../data/messages';
+import { watch } from 'vue';
+import { useFetch } from '@vueuse/core'
+import { onIonViewDidEnter, loadingController } from '@ionic/vue';
+
+import ChapterListItem from '@/components/ChapterListItem.vue';
 
 const getBackButtonText = () => {
   const win = window as any;
   const mode = win && win.Ionic && win.Ionic.mode;
-  return mode === 'ios' ? 'Inbox' : '';
+  return mode === 'ios' ? 'Stories' : '';
 };
 
 const route = useRoute();
-const message = getMessage(parseInt(route.params.id as string, 10));
+
+let loading;
+
+const { execute, isFetching, data: article } = useFetch(`https://magicallovely.stck.me/api/r/45840/posts/${route.params.id}`, { immediate: false }).json();
+
+watch(isFetching, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+    if (loading) return;
+    loading = await loadingController.create({
+          message: 'Loading Story',
+          duration: 3000
+        });
+
+        loading.present();
+  } else {
+    console.log(article);
+     if (loading) loading?.dismiss?.()
+     loading = null
+  }
+})
+
+onIonViewDidEnter(() => {
+  execute();
+});
 </script>
 
 <style scoped>
@@ -109,5 +133,14 @@ h1 {
 
 p {
   line-height: 1.4;
+}
+
+.clamp-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+  -webkit-line-clamp: 3; /* Number of lines to show */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Inbox</ion-title>
+        <ion-title>Stories</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -13,12 +13,12 @@
 
       <ion-header collapse="condense">
         <ion-toolbar>
-          <ion-title size="large">Inbox</ion-title>
+          <ion-title size="large">Stories</ion-title>
         </ion-toolbar>
       </ion-header>
 
-      <ion-list>
-        <MessageListItem v-for="message in messages" :key="message.id" :message="message" />
+      <ion-list lines="none">
+        <MessageListItem v-for="message in articles" :key="message.id" :message="message" />
       </ion-list>
     </ion-content>
   </ion-page>
@@ -33,17 +33,41 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonTitle,
-  IonToolbar,
+  IonToolbar
 } from '@ionic/vue';
+import { onIonViewDidEnter, loadingController } from '@ionic/vue';
+import { useFetch } from '@vueuse/core'
 import MessageListItem from '@/components/MessageListItem.vue';
-import { getMessages, Message } from '@/data/messages';
-import { ref } from 'vue';
+import { watch } from 'vue';
 
-const messages = ref<Message[]>(getMessages());
+let loading;
+
+const { execute, isFetching, data: articles } = useFetch('https://magicallovely.stck.me/api/r/45840/posts?ptype=dg&ptype=blog&ptype=parent', { immediate: false }).json()
 
 const refresh = (ev: CustomEvent) => {
   setTimeout(() => {
     ev.detail.complete();
+    execute()
   }, 3000);
 };
+
+watch(isFetching, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+    if (loading) return;
+    loading = await loadingController.create({
+          message: 'Loading Stories',
+          duration: 3000
+        });
+
+        loading.present();
+  } else {
+     if (loading) loading?.dismiss?.()
+     loading = null
+  }
+})
+
+onIonViewDidEnter(() => {
+  execute();
+});
+
 </script>
